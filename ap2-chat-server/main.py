@@ -126,7 +126,7 @@ class Add_Channel(webapp2.RequestHandler):
      def get(self):
          self.response.headers['Content-Type'] = 'application/json'
          try:
-             channel = Channel(id = self.request.get('id'), name = self.request.get('name'), icon = self.request.get('icon'))
+             channel = Channel(id = self.request.get('name'), name = self.request.get('name'), icon = self.request.get('icon'))
              channel.put()
              mesStat = AddMessageStatus (1 , 'success')
              self.response.out.write(mesStat.to_JSON())
@@ -138,7 +138,7 @@ class Join_Channel(webapp2.RequestHandler):
      def get(self):
          self.response.headers['Content-Type'] = 'application/json'
          try:
-             channel = ChannelMember(id = self.request.get('id'), user_id = self.request.get('user'), channel_id = self.request.get('channel_id'))
+             channel = ChannelMember(id = self.request.get('chan'), user_id = self.request.get('user'), channel_id = self.request.get('chan'))
              channel.put()
              mesStat = AddMessageStatus (1 , 'success')
              self.response.out.write(mesStat.to_JSON())

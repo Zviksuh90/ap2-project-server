@@ -1,0 +1,4 @@
+http://ap2-chat-server.appspot.com/Add_Channel?name=fox&icon=spew
+http://ap2-chat-server.appspot.com/Join_Channel?user=binny&chan=fox
+http://ap2-chat-server.appspot.com/Save_Message?date=14.06.2015.14.23&user=binny&chan=fox&text=nooooice&latitude=10&longtitude=20
+http://ap2-chat-server.appspot.com/Get_Updates?user=binny
