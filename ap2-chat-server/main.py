@@ -1,5 +1,8 @@
 import webapp2
 import json
+import pysftp
+import sys
+import sqr_common
 from google.appengine.ext import ndb
 
 class AddMessageStatus:
@@ -71,6 +74,10 @@ class ChannelMember(ndb.Model):
     id = ndb.StringProperty()
     channel_id = ndb.StringProperty()
     user_id = ndb.StringProperty()
+
+class Server(ndb.Model):
+    id = ndb.StringProperty()
+    link = ndb.StringProperty()
 
 class Save_Message(webapp2.RequestHandler):
      def get(self):
@@ -146,7 +153,11 @@ class Join_Channel(webapp2.RequestHandler):
              mesStat = AddMessageStatus (0 , 'missing a tag')
              self.response.out.write(mesStat.to_JSON())
         
-         
+class Add_Server(webapp2.RequestHandler):
+     def get(self):
+        server = Server(id = self.request.get('name'), link = self.request.get('link'))
+        server.put()
+        
 class MainPage(webapp2.RequestHandler):
     def get(self):
         self.response.headers['Content-Type'] = 'application/json'
@@ -162,5 +173,5 @@ class MainPage(webapp2.RequestHandler):
         
 
 app = webapp2.WSGIApplication([('/Save_Message', Save_Message), ('/Add_Channel', Add_Channel), ('/Join_Channel', Join_Channel),
- ('/', MainPage),('/Get_Updates', Get_Updates), ('/Get_Channels', Get_Channels),('/Retrieve_Message', Retrieve_Message),
+ ('/', MainPage),('/Get_Updates', Get_Updates), ('/Get_Channels', Get_Channels),('/Retrieve_Message', Retrieve_Message), ('/Add_Server', Add_Server)
 ], debug=True)
