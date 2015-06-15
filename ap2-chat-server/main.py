@@ -1,8 +1,5 @@
 import webapp2
 import json
-import pysftp
-import sys
-import sqr_common
 from google.appengine.ext import ndb
 
 class AddMessageStatus:
