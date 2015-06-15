@@ -1,5 +1,6 @@
 import webapp2
 import json
+from google.appengine.api import users
 from google.appengine.ext import ndb
 
 class AddMessageStatus:
@@ -41,10 +42,17 @@ class ChannelJas:
 		self.icon = icon
 
 class ChannelMemberJas:
-	def __init__(self, iden, user_id, channel_id):
+	def __init__(self, link):
 		self.id = iden
 		self.user_id = user_id
 		self.channel_id = channel_id
+
+	def to_JSON(self):
+		return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
+
+class ServerJas:
+        def __init__(self, server):
+		self.server = server
 
 	def to_JSON(self):
 		return json.dumps(self, default=lambda o: o.__dict__, sort_keys=True, indent=4)
@@ -152,23 +160,48 @@ class Join_Channel(webapp2.RequestHandler):
         
 class Add_Server(webapp2.RequestHandler):
      def get(self):
-        server = Server(id = self.request.get('name'), link = self.request.get('link'))
-        server.put()
-        
-class MainPage(webapp2.RequestHandler):
-    def get(self):
         self.response.headers['Content-Type'] = 'application/json'
         try:
-            channel = Channel(id = self.request.get('id'), name = int(self.request.get('name')), icon = self.request.get('icon'))
-            channel.put()
+            server = Server(id = self.request.get('name'), link = self.request.get('link'))
+            server.put()
             mesStat = AddMessageStatus (1 , 'success')
             self.response.out.write(mesStat.to_JSON())
         except (RuntimeError, TypeError, NameError, ValueError):
             mesStat = AddMessageStatus (0 , 'missing a tag')
             self.response.out.write(mesStat.to_JSON())
-        
-        
 
-app = webapp2.WSGIApplication([('/Save_Message', Save_Message), ('/Add_Channel', Add_Channel), ('/Join_Channel', Join_Channel),
- ('/', MainPage),('/Get_Updates', Get_Updates), ('/Get_Channels', Get_Channels),('/Retrieve_Message', Retrieve_Message), ('/Add_Server', Add_Server)
+class Get_Servers(webapp2.RequestHandler):
+     def get(self):
+        query = ndb.gql("""SELECT * FROM Server""")
+        self.response.headers['Content-Type'] = 'application/json'
+        allServers = []
+        for current in query:
+            feed = current.link
+            allServers.append(feed)
+        feeds = ServerJas(allServers)
+        self.response.out.write(feeds.to_JSON())
+
+class Register(webapp2.RequestHandler):
+     def get(self):
+        url = self.request.get('link') + "/Add_Server?name=chat_server&link=http://ap2-chat-server.appspot.com"
+             
+        result = urlfetch.fetch(url)
+        if result.status_code == 200:
+            self.response.out.write(result.content)        
+
+class login(webapp2.RequestHandler):
+     def get(self):
+        self.response.headers['Content-Type'] = 'application/json'
+        user = users.get_current_user()
+        if user:
+            greeting = ('%s,%s,%s' % (user.email(),user.user_id(),user.nickname()))
+            mesStat = AddMessageStatus (1 , 'success')
+            self.response.out.write(mesStat.to_JSON())
+        else:
+            mesStat = AddMessageStatus (0 , 'not logged in')
+            self.response.out.write(mesStat.to_JSON())
+
+
+app = webapp2.WSGIApplication([('/Save_Message', Save_Message), ('/Add_Channel', Add_Channel), ('/Join_Channel', Join_Channel), ('/Get_Servers', Get_Servers),
+ ('/login', login),('/Get_Updates', Get_Updates), ('/Get_Channels', Get_Channels),('/Retrieve_Message', Retrieve_Message), ('/Add_Server', Add_Server)
 ], debug=True)
