@@ -85,10 +85,11 @@ class Server(ndb.Model):
     link = ndb.StringProperty()
 
 class Save_Message(webapp2.RequestHandler):
-     def get(self):
+     def post(self):
          self.response.headers['Content-Type'] = 'application/json'
          try:
-             message = Message(id = self.request.get('date'), user_id = self.request.get('user'), channel_id = self.request.get('chan'), text = self.request.get('text'), latitude = float(self.request.get('lat')), longtitude = float(self.request.get('long')),  date_time = self.request.get('date'))
+             user = users.get_current_user()
+             message = Message(id = self.request.get('date'), user_id = user.user_id(), channel_id = self.request.get('chan'), text = self.request.get('text'), latitude = float(self.request.get('lat')), longtitude = float(self.request.get('long')),  date_time = self.request.get('date'))
              message.put()
              mesStat = AddMessageStatus (1 , 'success')
              self.response.out.write(mesStat.to_JSON())
@@ -111,8 +112,8 @@ class Get_Updates(webapp2.RequestHandler):
 
          self.response.headers['Content-Type'] = 'application/json'
          allMessages = []
-
-         query = ndb.gql("""SELECT * FROM ChannelMember WHERE user_id = :name""", name = self.request.get('user'))
+         user = users.get_current_user()
+         query = ndb.gql("""SELECT * FROM ChannelMember WHERE user_id = :name""", name = user.user_id())
          
          for channel in query:
              query2 = ndb.gql("""SELECT * FROM Message WHERE channel_id = :chan""", chan = channel.channel_id)
@@ -135,7 +136,7 @@ class Get_Channels(webapp2.RequestHandler):
          
          
 class Add_Channel(webapp2.RequestHandler):
-     def get(self):
+     def post(self):
          self.response.headers['Content-Type'] = 'application/json'
          try:
              channel = Channel(id = self.request.get('name'), name = self.request.get('name'), icon = self.request.get('icon'))
@@ -147,10 +148,11 @@ class Add_Channel(webapp2.RequestHandler):
              self.response.out.write(mesStat.to_JSON())
 
 class Join_Channel(webapp2.RequestHandler):
-     def get(self):
+     def post(self):
          self.response.headers['Content-Type'] = 'application/json'
          try:
-             channel = ChannelMember(id = self.request.get('chan'), user_id = self.request.get('user'), channel_id = self.request.get('chan'))
+             user = users.get_current_user()
+             channel = ChannelMember(id = self.request.get('chan'), user_id = user.user_id(), channel_id = self.request.get('chan'))
              channel.put()
              mesStat = AddMessageStatus (1 , 'success')
              self.response.out.write(mesStat.to_JSON())
@@ -159,7 +161,7 @@ class Join_Channel(webapp2.RequestHandler):
              self.response.out.write(mesStat.to_JSON())
         
 class Add_Server(webapp2.RequestHandler):
-     def get(self):
+     def post(self):
         self.response.headers['Content-Type'] = 'application/json'
         try:
             server = Server(id = self.request.get('name'), link = self.request.get('link'))
@@ -182,7 +184,7 @@ class Get_Servers(webapp2.RequestHandler):
         self.response.out.write(feeds.to_JSON())
 
 class Register(webapp2.RequestHandler):
-     def get(self):
+     def post(self):
         url = self.request.get('link') + "/Add_Server?name=chat_server&link=http://ap2-chat-server.appspot.com"
              
         result = urlfetch.fetch(url)
@@ -202,6 +204,6 @@ class login(webapp2.RequestHandler):
             self.response.out.write(mesStat.to_JSON())
 
 
-app = webapp2.WSGIApplication([('/Save_Message', Save_Message), ('/Add_Channel', Add_Channel), ('/Join_Channel', Join_Channel), ('/Get_Servers', Get_Servers),
- ('/login', login),('/Get_Updates', Get_Updates), ('/Get_Channels', Get_Channels),('/Retrieve_Message', Retrieve_Message), ('/Add_Server', Add_Server)
+app = webapp2.WSGIApplication([('/sendMessage', Save_Message), ('/addChannel', Add_Channel), ('/joinChannel', Join_Channel), ('/getServers', Get_Servers),
+ ('/login', login),('/getUpdates', Get_Updates), ('/getChannels', Get_Channels),('/Retrieve_Message', Retrieve_Message), ('/Add_Server', Add_Server)
 ], debug=True)
