@@ -136,15 +136,20 @@ class Get_Channels(webapp2.RequestHandler):
          
          
 class Add_Channel(webapp2.RequestHandler):
-     def post(self):
+     def get(self):
          self.response.headers['Content-Type'] = 'application/json'
-         try:
-             channel = Channel(id = self.request.get('name'), name = self.request.get('name'), icon = self.request.get('icon'))
-             channel.put()
-             mesStat = AddMessageStatus (1 , 'success')
-             self.response.out.write(mesStat.to_JSON())
-         except (RuntimeError, TypeError, NameError, ValueError):
-             mesStat = AddMessageStatus (0 , 'missing a tag')
+         key = ndb.Key('Channel', self.request.get('name'))
+         if key is None:
+             try:
+                 channel = Channel(id = self.request.get('name'), name = self.request.get('name'), icon = self.request.get('icon'))
+                 channel.put()
+                 mesStat = AddMessageStatus (1 , 'success')
+                 self.response.out.write(mesStat.to_JSON())
+             except (RuntimeError, TypeError, NameError, ValueError):
+                 mesStat = AddMessageStatus (0 , 'missing a tag')
+                 self.response.out.write(mesStat.to_JSON())
+         else:
+             mesStat = AddMessageStatus (0 , 'channel already exists')
              self.response.out.write(mesStat.to_JSON())
 
 class Join_Channel(webapp2.RequestHandler):
@@ -160,12 +165,24 @@ class Join_Channel(webapp2.RequestHandler):
              mesStat = AddMessageStatus (0 , 'missing a tag')
              self.response.out.write(mesStat.to_JSON())
         
-class Add_Server(webapp2.RequestHandler):
+class register(webapp2.RequestHandler):
      def post(self):
         self.response.headers['Content-Type'] = 'application/json'
         try:
             server = Server(id = self.request.get('name'), link = self.request.get('link'))
             server.put()
+            mesStat = AddMessageStatus (1 , 'success')
+            self.response.out.write(mesStat.to_JSON())
+        except (RuntimeError, TypeError, NameError, ValueError):
+            mesStat = AddMessageStatus (0 , 'missing a tag')
+            self.response.out.write(mesStat.to_JSON())
+
+class unRegister(webapp2.RequestHandler):
+     def get(self):
+        self.response.headers['Content-Type'] = 'application/json'
+        try:
+            key = ndb.Key('Server', self.request.get('link'))
+            key.delete()
             mesStat = AddMessageStatus (1 , 'success')
             self.response.out.write(mesStat.to_JSON())
         except (RuntimeError, TypeError, NameError, ValueError):
@@ -183,13 +200,20 @@ class Get_Servers(webapp2.RequestHandler):
         feeds = ServerJas(allServers)
         self.response.out.write(feeds.to_JSON())
 
-class Register(webapp2.RequestHandler):
+class add_myself(webapp2.RequestHandler):
      def post(self):
         url = self.request.get('link') + "/Add_Server?name=chat_server&link=http://ap2-chat-server.appspot.com"
              
         result = urlfetch.fetch(url)
         if result.status_code == 200:
             self.response.out.write(result.content)        
+
+class update(webapp2.RequestHandler):
+     def post(self):
+        query = ndb.gql("""SELECT * FROM Server""")
+        for current in query:
+            url = current.link + "/Add_Server?name=chat_server&link=http://ap2-chat-server.appspot.com"
+            result = urlfetch.fetch(url)
 
 class login(webapp2.RequestHandler):
      def get(self):
@@ -205,5 +229,5 @@ class login(webapp2.RequestHandler):
 
 
 app = webapp2.WSGIApplication([('/sendMessage', Save_Message), ('/addChannel', Add_Channel), ('/joinChannel', Join_Channel), ('/getServers', Get_Servers),
- ('/login', login),('/getUpdates', Get_Updates), ('/getChannels', Get_Channels),('/Retrieve_Message', Retrieve_Message), ('/Add_Server', Add_Server)
+ ('/login', login),('/getUpdates', Get_Updates), ('/getChannels', Get_Channels),('/Retrieve_Message', Retrieve_Message), ('/register', register)
 ], debug=True)
