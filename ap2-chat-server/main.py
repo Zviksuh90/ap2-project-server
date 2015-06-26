@@ -1,5 +1,6 @@
 import webapp2
 import json
+import datetime
 from google.appengine.api import users
 from google.appengine.ext import ndb
 
@@ -89,7 +90,7 @@ class Save_Message(webapp2.RequestHandler):
          self.response.headers['Content-Type'] = 'application/json'
          try:
              user = users.get_current_user()
-             message = Message(id = self.request.get('date'), user_id = user.user_id(), channel_id = self.request.get('chan'), text = self.request.get('text'), latitude = float(self.request.get('lat')), longtitude = float(self.request.get('long')),  date_time = self.request.get('date'))
+             message = Message(id = self.request.get('date'), user_id = user.user_id(), channel_id = self.request.get('chan'), text = self.request.get('text'), latitude = float(self.request.get('lat')), longtitude = float(self.request.get('long')),  date_time = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
              message.put()
              mesStat = AddMessageStatus (1 , 'success')
              self.response.out.write(mesStat.to_JSON())
@@ -136,7 +137,7 @@ class Get_Channels(webapp2.RequestHandler):
          
          
 class Add_Channel(webapp2.RequestHandler):
-     def get(self):
+     def post(self):
          self.response.headers['Content-Type'] = 'application/json'
          key = ndb.Key('Channel', self.request.get('name'))
          if key is None:
@@ -157,7 +158,7 @@ class Join_Channel(webapp2.RequestHandler):
          self.response.headers['Content-Type'] = 'application/json'
          try:
              user = users.get_current_user()
-             channel = ChannelMember(id = self.request.get('chan'), user_id = user.user_id(), channel_id = self.request.get('chan'))
+             channel = ChannelMember(id = self.request.get('id'), user_id = user.user_id(), channel_id = self.request.get('chan'))
              channel.put()
              mesStat = AddMessageStatus (1 , 'success')
              self.response.out.write(mesStat.to_JSON())
@@ -202,7 +203,7 @@ class Get_Servers(webapp2.RequestHandler):
 
 class add_myself(webapp2.RequestHandler):
      def post(self):
-        url = self.request.get('link') + "/Add_Server?name=chat_server&link=http://ap2-chat-server.appspot.com"
+        url = self.request.get('link') + "/register?name=chat_server&link=http://ap2-chat-server.appspot.com"
              
         result = urlfetch.fetch(url)
         if result.status_code == 200:
@@ -210,10 +211,24 @@ class add_myself(webapp2.RequestHandler):
 
 class update(webapp2.RequestHandler):
      def post(self):
+             
+        action = int(self.request.get('action'))
+        info = json.loads(self.request.get('data'))
+        
+        if action == 3:
+			commandType = {'Content-Type': '/update'}
+			form_fields = {"user": self.request.get('user'), "action": action, data": self.request.get('data')}
+
         query = ndb.gql("""SELECT * FROM Server""")
         for current in query:
             url = current.link + "/Add_Server?name=chat_server&link=http://ap2-chat-server.appspot.com"
             result = urlfetch.fetch(url)
+            
+            url = current.link
+            form_data = urllib.urlencode(form_fields)
+            result = urlfetch.fetch(url=url, payload=form_data, method=urlfetch.POST, headers=commandType)
+
+        
 
 class login(webapp2.RequestHandler):
      def get(self):
@@ -227,6 +242,16 @@ class login(webapp2.RequestHandler):
             mesStat = AddMessageStatus (0 , 'not logged in')
             self.response.out.write(mesStat.to_JSON())
 
+class Leave_Channel(webapp2.RequestHandler):
+     def post(self):
+         self.response.headers['Content-Type'] = 'application/json'
+		 
+         key = ndb.Key('ChannelMember', self.request.get('id'))
+         if key is None:
+            mesStat = AddMessageStatus (0 , 'channel does not exist')
+            self.response.out.write(mesStat.to_JSON())
+         else:
+             			
 
 app = webapp2.WSGIApplication([('/sendMessage', Save_Message), ('/addChannel', Add_Channel), ('/joinChannel', Join_Channel), ('/getServers', Get_Servers),
  ('/login', login),('/getUpdates', Get_Updates), ('/getChannels', Get_Channels),('/Retrieve_Message', Retrieve_Message), ('/register', register)
